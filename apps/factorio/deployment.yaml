@@ -30,7 +30,7 @@ spec:
             mountPath: /tmp/config
       containers:
       - name: factorio
-        image: factoriotools/factorio:stable
+        image: docker.io/factoriotools/factorio:stable
         ports:
           - name: game
             hostPort: 34197
