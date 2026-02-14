@@ -16,6 +16,7 @@ spec:
       containers:
       - name: minecraft
         image: docker.io/itzg/minecraft-server:java21-graalvm
+        imagePullPolicy: IfNotPresent
         env:
         - name: EULA
           value: "TRUE"
