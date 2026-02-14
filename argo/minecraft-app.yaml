@@ -10,7 +10,7 @@ spec:
   project: default
   source:
     path: apps/minecraft
-    repoURL: https://github.com/gpillon/k8s-magesgate-deploy.git
+    repoURL: https://github.com/manustars/k8s-magesgate-deploy.git
     targetRevision: HEAD
   syncPolicy:
     automated:
