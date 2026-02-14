@@ -3,6 +3,7 @@ kind: Kustomization
 resources:
 - minecraft-deployment.yaml
 - minecraft-service.yaml
+- minecraft-service-ext.yaml
 - minecraft-pvc.yaml
 - minecraft-namespace.yaml
 - minecraft-ingress.yaml
