@@ -8,7 +8,7 @@ metadata:
 spec:
   ingressClassName: "nginx"
   rules:
-  - host: "minecraft.the.magesgate.com"
+  - host: "minecraft.marsellihome.com"
     http:
       paths:
       - path: /
@@ -20,5 +20,5 @@ spec:
               name: web-map
   tls:
   - hosts:
-    - "minecraft.the.magesgate.com"
+    - "minecraft.marsellihome.com"
     secretName: minecraft-web-tls
