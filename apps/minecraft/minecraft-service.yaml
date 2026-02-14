@@ -4,7 +4,7 @@ metadata:
   name: minecraft-service
   namespace: minecraft
   labels:
-    release: minecraft
+    release: multimedia
 spec:
   type: LoadBalancer
   ports:  
