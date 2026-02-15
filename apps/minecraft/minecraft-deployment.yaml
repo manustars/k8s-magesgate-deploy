@@ -27,9 +27,9 @@ spec:
         - name: MAX_MEMORY
           value: 5G
         - name: SERVER_NAME
-          value: Magesgate.com
+          value: TrashCraft
         - name: MOTD
-          value: Where the magic Begins 
+          value: The trash is yours 
         ports:
         - containerPort: 25565
           hostPort: 25565
