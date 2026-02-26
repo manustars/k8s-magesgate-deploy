@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: minecraft
-        image: docker.io/itzg/minecraft-server:stable-java17
+        image: docker.io/itzg/minecraft-server:stable-java21-alpine
         imagePullPolicy: IfNotPresent
         env:
         - name: EULA
