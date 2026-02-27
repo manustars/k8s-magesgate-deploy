@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: samba-config
+  namespace: share
+data:
+  smb.conf: |
+    [global]
+       workgroup = WORKGROUP
+       interfaces = lo br-share
+       bind interfaces only = yes
+       security = user
+       
+       # Estensioni macOS Globali
+       vfs objects = fruit streams_xattr
+       fruit:aapl = yes
+       fruit:model = MacPro7,1
+       fruit:nfs_aces = no
+       
+       # Permessi forzati per evitare conflitti UID su CoreOS
+       force user = root
+       force group = root
+
+    [Backup]
+       path = /mnt/backup
+       valid users = timemachine, smbshare
+       writable = yes
+       fruit:time machine = yes
+       fruit:time machine max size = 2T
+
+    [Data]
+       path = /mnt/data
+       valid users = smbshare
+       writable = yes
+
+    [Multimedia]
+       path = /mnt/multimedia
+       valid users = smbshare
+       writable = yes
