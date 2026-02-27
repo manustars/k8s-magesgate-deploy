@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: smb-share
+  namespace: argocd
+spec:
+  destination:
+    namespace: share
+    server: https://kubernetes.default.svc
+  project: default
+  source:
+    path: apps/smb
+    repoURL: https://github.com/manustars/k8s-magesgate-deploy.git
+    targetRevision: HEAD
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
