@@ -51,12 +51,22 @@ spec:
           subPath: smb.conf
         - name: samba-private
           mountPath: /var/lib/samba/private
-        - name: backup-pvc
+        - name: multimedia-pvc
           mountPath: /mnt/backup
-        - name: data-pvc
+          subPath: backup
+        - name: multimedia-pvc
           mountPath: /mnt/data
+          subPath: data
         - name: multimedia-pvc
           mountPath: /mnt/multimedia
+          subPath: Video
+# VERSIONE MULTI PVC
+        # - name: backup-pvc
+        #   mountPath: /mnt/backup
+        # - name: data-pvc
+        #   mountPath: /mnt/data
+        # - name: multimedia-pvc
+        #   mountPath: /mnt/multimedia
 
       # --- AVAHI DISCOVERY (mDNS) ---
       - name: avahi
@@ -93,12 +103,16 @@ spec:
           secretName: samba-users
       - name: samba-private
         emptyDir: {}
-      - name: backup-pvc
-        persistentVolumeClaim:
-          claimName: pvc-backup
-      - name: data-pvc
-        persistentVolumeClaim:
-          claimName: pvc-data
       - name: multimedia-pvc
         persistentVolumeClaim:
-          claimName: pvc-multimedia
+          claimName: pvc-local-multimedia
+# VERSIONE MULTI PVC
+      # - name: backup-pvc
+      #   persistentVolumeClaim:
+      #     claimName: pvc-local-backup
+      # - name: data-pvc
+      #   persistentVolumeClaim:
+      #     claimName: pvc-local-data
+      # - name: multimedia-pvc
+      #   persistentVolumeClaim:
+      #     claimName: pvc-local-multimedia
