@@ -9,7 +9,7 @@ data:
     # Nome che apparirà sul Finder (puoi cambiarlo a piacimento)
     host-name=marsellihomeshare
     # Fondamentale: forza Avahi a usare solo il bridge della seconda rete
-    allow-interfaces=br-share
+    allow-interfaces=ovs-share
     use-ipv4=yes
     use-ipv6=no
     enable-dbus=no

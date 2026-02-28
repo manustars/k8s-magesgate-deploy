@@ -7,7 +7,7 @@ data:
   smb.conf: |
     [global]
        workgroup = WORKGROUP
-       interfaces = lo br-share
+       interfaces = lo ovs-share
        bind interfaces only = yes
        security = user
        
