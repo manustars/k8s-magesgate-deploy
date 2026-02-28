@@ -59,6 +59,9 @@ spec:
           subPath: smb.conf
         - name: samba-private
           mountPath: /var/lib/samba/private
+        - name: passwd-volume
+          mountPath: /etc/passwd
+          subPath: passwd
         - name: multimedia-pvc
           mountPath: /mnt/backup
           subPath: backup
@@ -103,6 +106,8 @@ spec:
         secret:
           secretName: samba-users
       - name: samba-private
+        emptyDir: {}
+      - name: passwd-volume
         emptyDir: {}
       - name: multimedia-pvc
         persistentVolumeClaim:
