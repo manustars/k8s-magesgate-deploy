@@ -4,7 +4,7 @@ resources:
 - smb-avahi-configmap.yaml
 - smb-configmap.yaml
 - smb-daemonset.yaml
-- smd-mounthost-daemonset.yaml
+- smb-mounthost-daemonset.yaml
 - smb-namespace.yaml
 - smb-pv.yaml
 - smb-pvc.yaml
