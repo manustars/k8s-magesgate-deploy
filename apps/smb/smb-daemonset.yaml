@@ -21,7 +21,7 @@ spec:
       nodeSelector:
         kubernetes.io/hostname: "kube-bootstrap-cvbiv.hq.marsellihome.com"
 
-      initContainers:
+initContainers:
       - name: user-setup
         image: quay.io/samba.org/samba-server:latest
         command: ["/bin/bash", "-c"]
@@ -29,10 +29,19 @@ spec:
           - |
             # Creazione dinamica utenti dai Secret
             for user_file in /etc/samba-secrets/*; do
+              # Salta i file nascosti o di sistema di Kubernetes
+              [[ "$user_file" == *".."* ]] && continue
+              
               username=$(basename "$user_file")
               password=$(cat "$user_file")
-              adduser -D -H -s /sbin/nologin "$username" || true
-              (echo "$password"; echo "$password") | smbpasswd -a -s "$username"
+              
+              echo "Configurazione utente: $username"
+              
+              # -M: no home directory, -s: shell disabilitata
+              useradd -M -s /usr/sbin/nologin "$username" || echo "Utente $username già esistente"
+              
+              # Configura la password in Samba in modo non interattivo
+              echo -e "$password\n$password" | smbpasswd -a -s "$username"
             done
         volumeMounts:
         - name: samba-secrets
