@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: lv-mount-host
+  namespace: share
+spec:
+  selector:
+    matchLabels:
+      app: lv-mount-host
+  template:
+    metadata:
+      labels:
+        app: lv-mount-host
+    spec:
+      containers:
+      - name: lv-mounter
+        image: docker.io/library/busybox:latest
+        command:
+          - sh
+          - -c
+          - |
+            mkdir -p /host/mnt/share
+            mount -t xfs /dev/mapper/vg_data-multimedia /host/mnt/share || echo "already mounted or failed"
+            sleep infinity
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - name: host-mnt
+          mountPath: /host/mnt
+          mountPropagation: Bidirectional
+        - name: host-dev
+          mountPath: /dev/mapper
+          readOnly: false
+      volumes:
+      - name: host-mnt
+        hostPath:
+          path: /mnt
+          type: Directory
+      - name: host-dev
+        hostPath:
+          path: /dev/mapper
+          type: Directory
+      nodeSelector:
+        kubernetes.io/hostname: "kube-bootstrap-cvbiv.hq.marsellihome.com"

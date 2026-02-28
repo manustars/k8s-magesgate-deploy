@@ -20,7 +20,7 @@ spec:
         searches: ["hq.marsellihome.com"]
       
 #      nodeSelector:
-#        kubernetes.io/hostname: "kube-bootstrap-cvbiv"
+#        kubernetes.io/hostname: "kube-bootstrap-cvbiv.hq.marsellihome.com"
 
       initContainers:
       - name: user-setup
