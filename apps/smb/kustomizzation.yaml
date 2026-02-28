@@ -8,4 +8,5 @@ resources:
 - smb-namespace.yaml
 - smb-pv.yaml
 - smb-pvc.yaml
+- smb-secrets-sealed.yaml
 
