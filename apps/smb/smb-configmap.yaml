@@ -10,6 +10,9 @@ data:
        interfaces = lo ovs-share
        bind interfaces only = yes
        security = user
+       map to guest = Bad User
+       passdb backend = tdbsam
+       obey pam restrictions = no
        
        # Estensioni macOS Globali
        vfs objects = fruit streams_xattr
