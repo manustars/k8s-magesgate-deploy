@@ -72,6 +72,8 @@ spec:
       # --- AVAHI DISCOVERY (mDNS) ---
       - name: avahi
         image: docker.io/ydkn/avahi:latest
+        securityContext:
+          privileged: true
         env:
         - name: AVAHI_SERVICES
           value: |
