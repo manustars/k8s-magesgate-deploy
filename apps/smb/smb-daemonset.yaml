@@ -1,0 +1,98 @@
+apiVersion: apps/v1
+kind: DaemonSet # <--- Cambiato da Deployment
+metadata:
+  name: samba-share
+  namespace: share
+spec:
+  selector:
+    matchLabels:
+      app: samba-share
+  template:
+    metadata:
+      labels:
+        app: samba-share
+    spec:
+      hostNetwork: true
+      dnsPolicy: None
+      dnsConfig:
+        nameservers: ["10.0.1.254"]
+        searches: ["hq.marsellihome.com"]
+      
+      nodeSelector:
+        kubernetes.io/hostname: "kube-bootstrap-cvbiv.hq.marsellihome.com"
+
+      initContainers:
+      - name: user-setup
+        image: quay.io/samba.org/samba-server:latest
+        command: ["/bin/bash", "-c"]
+        args:
+          - |
+            # Creazione dinamica utenti dai Secret
+            for user_file in /etc/samba-secrets/*; do
+              username=$(basename "$user_file")
+              password=$(cat "$user_file")
+              adduser -D -H -s /sbin/nologin "$username" || true
+              (echo "$password"; echo "$password") | smbpasswd -a -s "$username"
+            done
+        volumeMounts:
+        - name: samba-secrets
+          mountPath: /etc/samba-secrets
+        - name: samba-private
+          mountPath: /var/lib/samba/private
+
+      containers:
+      # --- SAMBA SERVER ---
+      - name: samba
+        image: quay.io/samba.org/samba-server:latest
+        volumeMounts:
+        - name: config
+          mountPath: /etc/samba/smb.conf
+          subPath: smb.conf
+        - name: samba-private
+          mountPath: /var/lib/samba/private
+        - name: multimedia-pvc
+          mountPath: /mnt/backup
+          subPath: backup
+        - name: multimedia-pvc
+          mountPath: /mnt/data
+          subPath: data
+        - name: multimedia-pvc
+          mountPath: /mnt/multimedia
+          subPath: Video
+
+      # --- AVAHI DISCOVERY (mDNS) ---
+      - name: avahi
+        image: docker.io/aminvakil/avahi:latest
+        env:
+        - name: AVAHI_SERVICES
+          value: |
+            [NAS-Server]
+            type=_smb._tcp
+            port=445
+            [Time-Machine-Backup]
+            type=_adisk._tcp
+            port=0
+            txt=sys=waMa=0,adVF=0x100 dk0=adVN=Backup,adVF=0x82
+        volumeMounts:
+        - name: avahi-conf
+          mountPath: /etc/avahi/avahi-daemon.conf
+          subPath: avahi-daemon.conf
+
+      volumes:
+      - name: config
+        configMap:
+          name: samba-config
+      - name: avahi-conf
+        configMap:
+          name: avahi-config
+          items:
+            - key: avahi-daemon.conf
+              path: avahi-daemon.conf
+      - name: samba-secrets
+        secret:
+          secretName: samba-users
+      - name: samba-private
+        emptyDir: {}
+      - name: multimedia-pvc
+        persistentVolumeClaim:
+          claimName: pvc-local-multimedia
