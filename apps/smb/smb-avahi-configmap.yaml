@@ -7,7 +7,8 @@ data:
   avahi-daemon.conf: |
     [server]
     # Nome che apparirà sul Finder (puoi cambiarlo a piacimento)
-    host-name=marsellihomeshare
+    host-name=share
+    domain-name=hq.marsellihome.com
     # Fondamentale: forza Avahi a usare solo il bridge della seconda rete
     allow-interfaces=ovs-share
     use-ipv4=yes
