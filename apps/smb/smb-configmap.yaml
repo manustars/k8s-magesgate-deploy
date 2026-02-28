@@ -35,5 +35,5 @@ data:
 
     [Multimedia]
        path = /mnt/multimedia
-       valid users = smbshare
+       valid users = smbshare, multimedia
        writable = yes
