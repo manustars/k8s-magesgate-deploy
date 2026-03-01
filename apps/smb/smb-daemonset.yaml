@@ -27,8 +27,8 @@ spec:
         command: ["/bin/bash", "-c"]
         args:
           - |
-            # 1. Prepariamo il file passwd nel volume condiviso
-            cp /etc/passwd /tmp/etc/passwd
+            # 1. Copiamo il passwd originale nella root del volume montato in /mnt/shared
+            cat /etc/passwd > /mnt/shared/passwd-custom
             
             # 2. Creazione dinamica utenti dai Secret
             uid=2000
@@ -40,12 +40,11 @@ spec:
               
               echo "Configurazione utente: $username"
               
-              # Aggiungiamo l'utente al file passwd nel volume condiviso
-              # Questo "inganna" Samba facendogli credere che l'utente esista nel sistema
-              echo "${username}:x:${uid}:${uid}:Samba User:/tmp:/usr/sbin/nologin" >> /tmp/etc/passwd
+              # Aggiungiamo l'utente al file custom
+              echo "${username}:x:${uid}:${uid}:Samba User:/tmp:/usr/sbin/nologin" >> /mnt/shared/passwd-custom
               ((uid++))
               
-              # Configura la password nel database Samba (che è nel volume samba-private)
+              # Configura la password nel database Samba (nel volume samba-private condiviso)
               echo -e "$password\n$password" | smbpasswd -a -s "$username"
             done
         volumeMounts:
@@ -54,7 +53,7 @@ spec:
         - name: samba-private
           mountPath: /var/lib/samba/private
         - name: passwd-volume
-          mountPath: /tmp/etc
+          mountPath: /mnt/shared # Montiamo il volume qui per scriverci dentro
 
       containers:
       # --- SAMBA SERVER ---
@@ -68,7 +67,7 @@ spec:
           mountPath: /var/lib/samba/private
         - name: passwd-volume
           mountPath: /etc/passwd
-          subPath: passwd
+          subPath: passwd-custom # Monta il file creato dall'init sopra /etc/passwd
         - name: multimedia-pvc
           mountPath: /mnt/backup
           subPath: backup
