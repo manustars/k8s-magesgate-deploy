@@ -14,7 +14,7 @@ data:
        interfaces = lo ovs-share
        bind interfaces only = yes
        security = user
-       
+       log level = 3
        # Estensioni macOS Globali
        vfs objects = fruit streams_xattr
        fruit:aapl = yes
