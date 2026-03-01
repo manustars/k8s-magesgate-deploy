@@ -27,23 +27,41 @@ spec:
         command: ["/bin/bash", "-c"]
         args:
           - |
-            # 1. Creazione utenti Unix e Samba nello stesso runtime
+            # 1. Creazione utenti con UID fissi
+            # Creiamo multimedia (1000) e timemachine (1002)
+            useradd -u 1000 -M -s /usr/sbin/nologin multimedia || echo "multimedia già presente"
+            useradd -u 1002 -M -s /usr/sbin/nologin timemachine || echo "timemachine già presente"
+            
+            # Creiamo smbshare (1001) e lo aggiungiamo ai gruppi degli altri
+            useradd -u 1001 -M -G multimedia,timemachine -s /usr/sbin/nologin smbshare || usermod -aG multimedia,timemachine smbshare
+
+            # 2. Configurazione password Samba dai secret
             for user_file in /etc/samba-secrets/*; do
               [[ "$user_file" == *".."* ]] && continue
               username=$(basename "$user_file")
               password=$(cat "$user_file")
-              
-              echo "Configurazione utente: $username"
-              useradd -M -s /usr/sbin/nologin "$username" || echo "Utente Unix già presente"
-              
               echo -e "$password\n$password" | smbpasswd -a -s "$username"
               smbpasswd -e "$username"
             done
 
+            # 3. SETTAGGIO PERMESSI FISICI (SGID)
+            echo "Applicazione permessi alle cartelle..."
+            
+            # Multimedia: Proprietario multimedia, bit SGID per ereditarietà gruppo
+            chown -R multimedia:multimedia /mnt/multimedia
+            chmod -R 2770 /mnt/multimedia
+
+            # Backup: Proprietario timemachine, bit SGID
+            chown -R timemachine:timemachine /mnt/backup
+            chmod -R 2770 /mnt/backup
+
+            # Data: Solo smbshare
+            chown -R smbshare:smbshare /mnt/data
+            chmod -R 700 /mnt/data
+
             echo "Avvio Samba..."
-            # 2. Esecuzione del demone Samba con opzioni corrette per 4.22
-            # Cambiato --log-stdout in --debug-stdout
             exec /usr/sbin/smbd --foreground --no-process-group --debug-stdout
+
         volumeMounts:
         - name: samba-secrets
           mountPath: /etc/samba-secrets
