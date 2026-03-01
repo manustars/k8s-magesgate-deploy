@@ -10,6 +10,8 @@ data:
        interfaces = lo ovs-share
        bind interfaces only = yes
        security = user
+       logging = stdout
+       log level = 2
        map to guest = Bad User
        passdb backend = tdbsam
        obey pam restrictions = no
