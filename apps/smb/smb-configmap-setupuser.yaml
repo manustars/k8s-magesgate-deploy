@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: samba-user-script
+  namespace: share
+data:
+  01-setup-users.sh: |
+    #!/bin/bash
+    uid=2000
+    for user_file in /etc/samba-secrets/*; do
+      [[ "$user_file" == *".."* ]] && continue
+      username=$(basename "$user_file")
+      password=$(cat "$user_file")
+      echo "Configurazione utente: $username"
+      # Crea l'utente nel sistema reale del container
+      useradd -M -s /usr/sbin/nologin -u $uid "$username" || true
+      # Aggiunge a Samba
+      (echo "$password"; echo "$password") | smbpasswd -a -s "$username"
+      ((uid++))
+    done

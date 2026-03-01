@@ -21,50 +21,7 @@ spec:
       nodeSelector:
         kubernetes.io/hostname: "kube-bootstrap-cvbiv.hq.marsellihome.com"
 
-      initContainers:
-      - name: user-setup
-        image: quay.io/samba.org/samba-server:latest
-        command: ["/bin/bash", "-c"]
-        args:
-          - |
-            set -e
-            # 1. Prepariamo le directory per il database Samba
-            mkdir -p /var/lib/samba/private
-            chmod 700 /var/lib/samba/private
-            
-            # 2. Prepariamo il file passwd per il container finale
-            cat /etc/passwd > /mnt/shared/passwd-custom
-            
-            # 3. Ciclo creazione utenti
-            uid=2000
-            for user_file in /etc/samba-secrets/*; do
-              [[ "$user_file" == *".."* ]] && continue
-              
-              username=$(basename "$user_file")
-              password=$(cat "$user_file")
-              
-              echo "Processando utente: $username"
-              
-              # Creiamo l'utente nel sistema locale dell'InitContainer
-              # Fondamentale: permette a smbpasswd di validare l'utente
-              useradd -M -s /usr/sbin/nologin -u $uid "$username" || true
-              
-              # Aggiungiamo l'utente al file che verrà montato nel container principale
-              echo "${username}:x:${uid}:${uid}:Samba User:/tmp:/usr/sbin/nologin" >> /mnt/shared/passwd-custom
-              
-              # Registriamo la password nel database persistente (tdbsam)
-              (echo "$password"; echo "$password") | smbpasswd -a -s "$username"
-              
-              ((uid++))
-            done
-            echo "Setup completato correttamente."
-        volumeMounts:
-        - name: samba-secrets
-          mountPath: /etc/samba-secrets
-        - name: samba-private
-          mountPath: /var/lib/samba/private
-        - name: passwd-volume
-          mountPath: /mnt/shared
+      # --- INIT CONTAINER RIMOSSO ---
 
       containers:
       # --- SAMBA SERVER ---
@@ -76,9 +33,11 @@ spec:
           subPath: smb.conf
         - name: samba-private
           mountPath: /var/lib/samba/private
-        - name: passwd-volume
-          mountPath: /etc/passwd
-          subPath: passwd-custom
+        # --- MONTAGGIO SCRIPT UTENTI ---
+        - name: user-script
+          mountPath: /etc/samba/container/setup.d/setup-users.sh
+          subPath: setup-users.sh
+        # -------------------------------
         - name: multimedia-pvc
           mountPath: /mnt/backup
           subPath: backup
@@ -89,7 +48,7 @@ spec:
           mountPath: /mnt/multimedia
           subPath: Video
 
-      # --- AVAHI DISCOVERY (mDNS) ---
+      # --- AVAHI DISCOVERY ---
       - name: avahi
         image: docker.io/ydkn/avahi:latest
         securityContext:
@@ -113,6 +72,10 @@ spec:
       - name: config
         configMap:
           name: samba-config
+      - name: user-script
+        configMap:
+          name: samba-user-script
+          defaultMode: 0755 # Rende lo script eseguibile
       - name: avahi-conf
         configMap:
           name: avahi-config
@@ -123,8 +86,6 @@ spec:
         secret:
           secretName: samba-users
       - name: samba-private
-        emptyDir: {}
-      - name: passwd-volume
         emptyDir: {}
       - name: multimedia-pvc
         persistentVolumeClaim:
