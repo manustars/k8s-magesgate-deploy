@@ -4,7 +4,7 @@ metadata:
   name: samba-config
   namespace: share
 data:
-  # La sintassi corretta richiede la virgola per mappare pattern con spazi
+  # Sintassi precisa per Samba 4.x per catturare il dominio Microsoft
   user.map: |
     smbshare = "*\smbshare"
     multimedia = "*\multimedia"
@@ -17,15 +17,14 @@ data:
        bind interfaces only = yes
        security = user
        
-       # Risolve l'errore "failed to setup guest info"
-       # Forza l'utente guest su un account che esiste certamente nel container
+       # Risolve "failed to setup guest info" forzando un utente Unix esistente
        guest account = nobody
        map to guest = bad user
        
-       # Mapping utenti per ripulire i domini Windows (MicrosoftAccount, ecc.)
+       # Applica il mapping per eliminare il prefisso [MicrosoftAccount]
        username map = /etc/samba/user.map
        
-       # Disabilita funzioni di dominio non necessarie che causano rumore nei log
+       # Ottimizzazioni per Samba 4.22 Standalone
        domain master = no
        local master = no
        preferred master = no
@@ -41,7 +40,7 @@ data:
        fruit:aapl = yes
        fruit:model = MacPro7,1
        
-       # Forzatura privilegi per filesystem CoreOS/PVC
+       # Forzatura privilegi
        force user = root
        force group = root
 
