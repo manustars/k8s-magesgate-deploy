@@ -11,20 +11,40 @@ data:
 
     USERS="smbshare multimedia timemachine"
 
+    echo "=== Init samba database ==="
+
+    mkdir -p /var/lib/samba/private
+
+    # CREA DB SE NON ESISTONO
+    test -f /var/lib/samba/private/secrets.tdb || \
+      samba-tool domain provision \
+        --use-rfc2307 \
+        --realm=WORKGROUP \
+        --domain=WORKGROUP \
+        --server-role=standalone \
+        --dns-backend=NONE || true
+
     echo "=== Creating Unix users ==="
+
     for USER in $USERS; do
       id "$USER" >/dev/null 2>&1 || useradd -M -s /sbin/nologin "$USER"
     done
 
     echo "=== Creating Samba users from Secret ==="
+
     for USER in $USERS; do
+
       PASS_FILE="/run/secrets/samba/$USER"
+
       if [ ! -f "$PASS_FILE" ]; then
         echo "Missing password secret for $USER"
         exit 2
       fi
+
       PASS=$(cat "$PASS_FILE")
-      printf "%s\n%s\n" "$PASS" "$PASS" | smbpasswd -a -s "$USER" || true
+
+      printf "%s\n%s\n" "$PASS" "$PASS" | smbpasswd -a -s "$USER"
+
     done
 
     echo "=== Samba users ready ==="
