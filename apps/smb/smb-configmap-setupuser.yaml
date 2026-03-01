@@ -15,19 +15,21 @@ data:
 
     mkdir -p /var/lib/samba/private
 
-    # CREA DB SE NON ESISTONO
+    # CREA DB samba standalone se non esiste
     test -f /var/lib/samba/private/secrets.tdb || \
-      samba-tool domain provision \
-        --use-rfc2307 \
-        --realm=WORKGROUP \
-        --domain=WORKGROUP \
-        --server-role=standalone \
-        --dns-backend=NONE || true
+      net setlocalsid S-1-5-21-$(date +%s)-$(date +%s)-$(date +%s)
+
+    echo "=== Creating guest unix user ==="
+
+    # NECESSARIO PER Samba guest lookup
+    id nobody >/dev/null 2>&1 || \
+      useradd -M -s /sbin/nologin nobody
 
     echo "=== Creating Unix users ==="
 
     for USER in $USERS; do
-      id "$USER" >/dev/null 2>&1 || useradd -M -s /sbin/nologin "$USER"
+      id "$USER" >/dev/null 2>&1 || \
+        useradd -M -s /sbin/nologin "$USER"
     done
 
     echo "=== Creating Samba users from Secret ==="
@@ -43,7 +45,9 @@ data:
 
       PASS=$(cat "$PASS_FILE")
 
-      printf "%s\n%s\n" "$PASS" "$PASS" | smbpasswd -a -s "$USER"
+      # evita errore se già esiste
+      pdbedit -L | grep -q "^$USER:" || \
+        printf "%s\n%s\n" "$PASS" "$PASS" | smbpasswd -a -s "$USER"
 
     done
 
