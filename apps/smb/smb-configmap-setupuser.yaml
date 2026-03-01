@@ -4,7 +4,6 @@ metadata:
   name: samba-user-script
   namespace: share
 data:
-
   setup-users.sh: |
     #!/bin/sh
     set -e
@@ -13,28 +12,28 @@ data:
 
     echo "=== Init samba database ==="
 
-    mkdir -p /var/lib/samba/private
-
-    # CREA DB samba standalone se non esiste
+    # Crea directory private se non esistono
     mkdir -p /var/lib/samba/private
 
     echo "=== Creating guest unix user ==="
 
-    # NECESSARIO PER Samba guest lookup
-    id nobody >/dev/null 2>&1 || \
-      useradd -r -u 65534 -M -s /sbin/nologin nobody || true
+    # Necessario per Samba guest lookup
+    id nobody >/dev/null 2>&1 || useradd -r -u 65534 -M -s /sbin/nologin nobody || true
+
+    # Assicura che nobody sia anche in Samba
+    if ! pdbedit -L | grep -q "^nobody:"; then
+      printf "!\n!\n" | smbpasswd -a -s nobody || true
+    fi
 
     echo "=== Creating Unix users ==="
 
     for USER in $USERS; do
-      id "$USER" >/dev/null 2>&1 || \
-        useradd -M -s /sbin/nologin "$USER"
+      id "$USER" >/dev/null 2>&1 || useradd -M -s /sbin/nologin "$USER"
     done
 
     echo "=== Creating Samba users from Secret ==="
 
     for USER in $USERS; do
-
       PASS_FILE="/run/secrets/samba/$USER"
 
       if [ ! -f "$PASS_FILE" ]; then
@@ -44,11 +43,10 @@ data:
 
       PASS=$(cat "$PASS_FILE")
 
-      # evita errore se già esiste
+      # Evita errore se l'utente Samba esiste già
       if ! pdbedit -L | grep -q "^$USER:"; then
         printf "%s\n%s\n" "$PASS" "$PASS" | smbpasswd -a -s "$USER" || true
       fi
-
     done
 
     echo "=== Samba users ready ==="
