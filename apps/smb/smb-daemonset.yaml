@@ -21,38 +21,41 @@ spec:
       nodeSelector:
         kubernetes.io/hostname: "kube-bootstrap-cvbiv.hq.marsellihome.com"
 
-      initContainers:
-      - name: user-setup
-        image: quay.io/samba.org/samba-server:latest
-        command: ["/bin/bash", "-c"]
-        args:
-          - |
-            for user_file in /etc/samba-secrets/*; do
-              [[ "$user_file" == *".."* ]] && continue
-              username=$(basename "$user_file")
-              password=$(cat "$user_file")
-              echo "Configurazione utente: $username"
-              useradd -M -s /usr/sbin/nologin "$username" || echo "Utente $username già esistente"
-              echo -e "$password\n$password" | smbpasswd -a -s "$username"
-            done
-        volumeMounts:
-        - name: samba-secrets
-          mountPath: /etc/samba-secrets
-        - name: samba-private
-          mountPath: /var/lib/samba/private
+      # --- INIT CONTAINER RIMOSSO: La logica ora è nel container principale ---
 
       containers:
       - name: samba
         image: quay.io/samba.org/samba-server:latest
+        command: ["/bin/bash", "-c"]
+        args:
+          - |
+            # 1. Creazione utenti Unix e Samba nello stesso runtime
+            for user_file in /etc/samba-secrets/*; do
+              [[ "$user_file" == *".."* ]] && continue
+              username=$(basename "$user_file")
+              password=$(cat "$user_file")
+              
+              echo "Configurazione utente: $username"
+              # Crea l'account Unix (necessario per Samba)
+              useradd -M -s /usr/sbin/nologin "$username" || echo "Utente Unix già presente"
+              
+              # Aggiorna la password nel database Samba (passdb.tdb)
+              echo -e "$password\n$password" | smbpasswd -a -s "$username"
+              smbpasswd -e "$username"
+            done
+
+            echo "Avvio Samba..."
+            # 2. Esecuzione del demone Samba (comando originale dell'immagine)
+            exec /usr/sbin/smbd --foreground --no-process-group --log-stdout < /dev/null
         volumeMounts:
+        - name: samba-secrets
+          mountPath: /etc/samba-secrets
         - name: config
           mountPath: /etc/samba/smb.conf
           subPath: smb.conf
-        # --- MODIFICA 1: Aggiunto mount per user.map ---
         - name: config
           mountPath: /etc/samba/user.map
           subPath: user.map
-        # -----------------------------------------------
         - name: samba-private
           mountPath: /var/lib/samba/private
         - name: multimedia-pvc
@@ -98,6 +101,8 @@ spec:
         secret:
           secretName: samba-users
       - name: samba-private
+        # Cambiato in HostPath o PVC se vuoi che le statistiche/id utenti 
+        # rimangano persistenti tra i riavvii del pod, altrimenti va bene emptyDir
         emptyDir: {}
       - name: multimedia-pvc
         persistentVolumeClaim:
