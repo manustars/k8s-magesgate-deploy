@@ -13,7 +13,7 @@ spec:
         app: samba-share
     spec:
       hostNetwork: true
-      dnsPolicy: None
+      dnsPolicy: ClusterFirstWithHostNet
       dnsConfig:
         nameservers: ["10.0.1.254"]
         searches: ["hq.marsellihome.com"]
@@ -21,38 +21,47 @@ spec:
       nodeSelector:
         kubernetes.io/hostname: "kube-bootstrap-cvbiv.hq.marsellihome.com"
 
-      # --- INIT CONTAINER RIMOSSO ---
+      # -------------------------------
+      # INIT CONTAINER POPOLA UTENTI SAMBA
+      # -------------------------------
+      initContainers:
+      - name: setup-samba-users
+        image: quay.io/samba.org/samba-server:latest
+        command:
+          - /bin/sh
+          - -c
+          - /etc/samba/container/setup.d/setup-users.sh
+        volumeMounts:
+          - name: samba-private
+            mountPath: /var/lib/samba/private
+          - name: samba-secrets
+            mountPath: /run/secrets/samba
+            readOnly: true
+          - name: user-script
+            mountPath: /etc/samba/container/setup.d
 
       containers:
       # --- SAMBA SERVER ---
       - name: samba
         image: quay.io/samba.org/samba-server:latest
         volumeMounts:
-        - name: config
-          mountPath: /etc/samba/smb.conf
-          subPath: smb.conf
-        - name: config
-          mountPath: /etc/samba/user.map
-          subPath: user.map
-        - name: samba-private
-          mountPath: /var/lib/samba/private
-        # --- MONTAGGIO SCRIPT UTENTI ---
-        - name: user-script
-          mountPath: /etc/samba/container/setup.d
-        #  subPath: setup-users.sh
-        - name: samba-secrets
-          mountPath: /run/secrets/samba
-          readOnly: true
-        # -------------------------------
-        - name: multimedia-pvc
-          mountPath: /mnt/backup
-          subPath: backup
-        - name: multimedia-pvc
-          mountPath: /mnt/data
-          subPath: data
-        - name: multimedia-pvc
-          mountPath: /mnt/multimedia
-          subPath: Video
+          - name: config
+            mountPath: /etc/samba/smb.conf
+            subPath: smb.conf
+          - name: config
+            mountPath: /etc/samba/user.map
+            subPath: user.map
+          - name: samba-private
+            mountPath: /var/lib/samba/private
+          - name: multimedia-pvc
+            mountPath: /mnt/backup
+            subPath: backup
+          - name: multimedia-pvc
+            mountPath: /mnt/data
+            subPath: data
+          - name: multimedia-pvc
+            mountPath: /mnt/multimedia
+            subPath: Video
 
       # --- AVAHI DISCOVERY ---
       - name: avahi
@@ -60,39 +69,39 @@ spec:
         securityContext:
           privileged: true
         env:
-        - name: AVAHI_SERVICES
-          value: |
-            [NAS-Server]
-            type=_smb._tcp
-            port=445
-            [Time-Machine-Backup]
-            type=_adisk._tcp
-            port=0
-            txt=sys=waMa=0,adVF=0x100 dk0=adVN=Backup,adVF=0x82
+          - name: AVAHI_SERVICES
+            value: |
+              [NAS-Server]
+              type=_smb._tcp
+              port=445
+              [Time-Machine-Backup]
+              type=_adisk._tcp
+              port=0
+              txt=sys=waMa=0,adVF=0x100 dk0=adVN=Backup,adVF=0x82
         volumeMounts:
-        - name: avahi-conf
-          mountPath: /etc/avahi/avahi-daemon.conf
-          subPath: avahi-daemon.conf
+          - name: avahi-conf
+            mountPath: /etc/avahi/avahi-daemon.conf
+            subPath: avahi-daemon.conf
 
       volumes:
-      - name: config
-        configMap:
-          name: samba-config
-      - name: user-script
-        configMap:
-          name: samba-user-script
-          defaultMode: 0755 # Rende lo script eseguibile
-      - name: avahi-conf
-        configMap:
-          name: avahi-config
-          items:
-            - key: avahi-daemon.conf
-              path: avahi-daemon.conf
-      - name: samba-secrets
-        secret:
-          secretName: samba-users
-      - name: multimedia-pvc
-        persistentVolumeClaim:
-          claimName: pvc-local-multimedia
-      - name: samba-private
-        emptyDir: {}
+        - name: config
+          configMap:
+            name: samba-config
+        - name: user-script
+          configMap:
+            name: samba-user-script
+            defaultMode: 0755
+        - name: avahi-conf
+          configMap:
+            name: avahi-config
+            items:
+              - key: avahi-daemon.conf
+                path: avahi-daemon.conf
+        - name: samba-secrets
+          secret:
+            secretName: samba-users
+        - name: multimedia-pvc
+          persistentVolumeClaim:
+            claimName: pvc-local-multimedia
+        - name: samba-private
+          emptyDir: {}
