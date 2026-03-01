@@ -38,8 +38,11 @@ spec:
           mountPath: /var/lib/samba/private
         # --- MONTAGGIO SCRIPT UTENTI ---
         - name: user-script
-          mountPath: /etc/samba/container/setup.d/setup-users.sh
-          subPath: setup-users.sh
+          mountPath: /etc/samba/container/setup.d
+        #  subPath: setup-users.sh
+        - name: samba-secrets
+          mountPath: /run/secrets/samba
+          readOnly: true
         # -------------------------------
         - name: multimedia-pvc
           mountPath: /mnt/backup
@@ -88,8 +91,8 @@ spec:
       - name: samba-secrets
         secret:
           secretName: samba-users
-      - name: samba-private
-        emptyDir: {}
       - name: multimedia-pvc
         persistentVolumeClaim:
           claimName: pvc-local-multimedia
+      - name: samba-private
+        emptyDir: {}

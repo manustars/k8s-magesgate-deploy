@@ -4,17 +4,34 @@ metadata:
   name: samba-user-script
   namespace: share
 data:
-  01-setup-users.sh: |
-    #!/bin/bash
-    uid=2000
-    for user_file in /etc/samba-secrets/*; do
-      [[ "$user_file" == *".."* ]] && continue
-      username=$(basename "$user_file")
-      password=$(cat "$user_file")
-      echo "Configurazione utente: $username"
-      # Crea l'utente nel sistema reale del container
-      useradd -M -s /usr/sbin/nologin -u $uid "$username" || true
-      # Aggiunge a Samba
-      (echo "$password"; echo "$password") | smbpasswd -a -s "$username"
-      ((uid++))
+
+  setup-users.sh: |
+    #!/bin/sh
+    set -e
+
+    USERS="smbshare multimedia timemachine"
+
+    echo "=== Creating Unix users ==="
+
+    for USER in $USERS; do
+      id "$USER" >/dev/null 2>&1 || adduser -D "$USER"
     done
+
+    echo "=== Creating Samba users from Secret ==="
+
+    for USER in $USERS; do
+
+      PASS_FILE="/run/secrets/samba/$USER"
+
+      if [ ! -f "$PASS_FILE" ]; then
+        echo "Missing password secret for $USER"
+        exit 1
+      fi
+
+      PASS=$(cat "$PASS_FILE")
+
+      echo -e "$PASS\n$PASS" | smbpasswd -a -s "$USER" || true
+
+    done
+
+    echo "=== Samba users ready ==="
