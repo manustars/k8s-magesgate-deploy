@@ -21,8 +21,6 @@ spec:
       nodeSelector:
         kubernetes.io/hostname: "kube-bootstrap-cvbiv.hq.marsellihome.com"
 
-      # --- INIT CONTAINER RIMOSSO: La logica ora è nel container principale ---
-
       containers:
       - name: samba
         image: quay.io/samba.org/samba-server:latest
@@ -36,17 +34,16 @@ spec:
               password=$(cat "$user_file")
               
               echo "Configurazione utente: $username"
-              # Crea l'account Unix (necessario per Samba)
               useradd -M -s /usr/sbin/nologin "$username" || echo "Utente Unix già presente"
               
-              # Aggiorna la password nel database Samba (passdb.tdb)
               echo -e "$password\n$password" | smbpasswd -a -s "$username"
               smbpasswd -e "$username"
             done
 
             echo "Avvio Samba..."
-            # 2. Esecuzione del demone Samba (comando originale dell'immagine)
-            exec /usr/sbin/smbd --foreground --no-process-group --log-stdout < /dev/null
+            # 2. Esecuzione del demone Samba con opzioni corrette per 4.22
+            # Cambiato --log-stdout in --debug-stdout
+            exec /usr/sbin/smbd --foreground --no-process-group --debug-stdout
         volumeMounts:
         - name: samba-secrets
           mountPath: /etc/samba-secrets
@@ -101,8 +98,6 @@ spec:
         secret:
           secretName: samba-users
       - name: samba-private
-        # Cambiato in HostPath o PVC se vuoi che le statistiche/id utenti 
-        # rimangano persistenti tra i riavvii del pod, altrimenti va bene emptyDir
         emptyDir: {}
       - name: multimedia-pvc
         persistentVolumeClaim:
