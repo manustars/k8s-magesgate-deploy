@@ -32,8 +32,8 @@ spec:
           - -c
           - /etc/samba/container/setup.d/setup-users.sh
         volumeMounts:
-          - name: samba-private
-            mountPath: /var/lib/samba/private
+          - name: samba-state
+            mountPath: /var/lib/samba
           - name: samba-secrets
             mountPath: /run/secrets/samba
             readOnly: true
@@ -51,8 +51,8 @@ spec:
           - name: config
             mountPath: /etc/samba/user.map
             subPath: user.map
-          - name: samba-private
-            mountPath: /var/lib/samba/private
+          - name: samba-state
+            mountPath: /var/lib/samba
           - name: multimedia-pvc
             mountPath: /mnt/backup
             subPath: backup
@@ -105,3 +105,6 @@ spec:
             claimName: pvc-local-multimedia
         - name: samba-private
           emptyDir: {}
+        - name: samba-state
+          persistentVolumeClaim:
+            claimName: pvc-samba-state
