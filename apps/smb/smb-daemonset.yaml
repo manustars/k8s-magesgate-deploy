@@ -27,33 +27,43 @@ spec:
         command: ["/bin/bash", "-c"]
         args:
           - |
-            # 1. Copiamo il passwd originale nella root del volume montato in /mnt/shared
+            set -e
+            # 1. Inizializza la directory privata di Samba nel volume condiviso
+            # Senza questo, smbpasswd fallisce perché non trova dove scrivere il database
+            mkdir -p /var/lib/samba/private
+            chmod 700 /var/lib/samba/private
+            
+            # 2. Prepariamo il file passwd nel volume condiviso per "ingannare" Samba
+            # Copiamo l'originale e aggiungiamo gli utenti dei Secret
             cat /etc/passwd > /mnt/shared/passwd-custom
             
-            # 2. Creazione dinamica utenti dai Secret
+            # 3. Ciclo di creazione utenti
             uid=2000
             for user_file in /etc/samba-secrets/*; do
+              # Salta i file interni di Kubernetes
               [[ "$user_file" == *".."* ]] && continue
               
               username=$(basename "$user_file")
               password=$(cat "$user_file")
               
-              echo "Configurazione utente: $username"
+              echo "Configurazione credenziali per: $username"
               
-              # Aggiungiamo l'utente al file custom
+              # Iniezione nel passwd custom (indispensabile per il login)
               echo "${username}:x:${uid}:${uid}:Samba User:/tmp:/usr/sbin/nologin" >> /mnt/shared/passwd-custom
               ((uid++))
               
-              # Configura la password nel database Samba (nel volume samba-private condiviso)
+              # Aggiunta al database Samba (passdb.tdb)
+              # Ora che /var/lib/samba/private esiste, questo comando avrà successo
               echo -e "$password\n$password" | smbpasswd -a -s "$username"
             done
+            echo "Setup utenti completato con successo."
         volumeMounts:
         - name: samba-secrets
           mountPath: /etc/samba-secrets
         - name: samba-private
           mountPath: /var/lib/samba/private
         - name: passwd-volume
-          mountPath: /mnt/shared # Montiamo il volume qui per scriverci dentro
+          mountPath: /mnt/shared
 
       containers:
       # --- SAMBA SERVER ---
@@ -67,7 +77,7 @@ spec:
           mountPath: /var/lib/samba/private
         - name: passwd-volume
           mountPath: /etc/passwd
-          subPath: passwd-custom # Monta il file creato dall'init sopra /etc/passwd
+          subPath: passwd-custom
         - name: multimedia-pvc
           mountPath: /mnt/backup
           subPath: backup
