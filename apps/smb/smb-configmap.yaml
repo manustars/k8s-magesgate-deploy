@@ -5,47 +5,39 @@ metadata:
   namespace: share
 data:
   user.map: |
-    smbshare = "*\smbshare"
-    multimedia = "*\multimedia"
-    timemachine = "*\timemachine"
+    # Formato: Utente_Locale = Alias_Remoto
+    smbshare = *\smbshare smbshare
+    multimedia = *\multimedia multimedia
+    timemachine = *\timemachine timemachine
+
   smb.conf: |
     [global]
        workgroup = WORKGROUP
-       interfaces = lo ovs-share
-       bind interfaces only = yes
        security = user
        log level = 3
-       # Estensioni macOS Globali
+       username map = /etc/samba/user.map
+       
+       # DISATTIVA il mapping dei nomi ai gruppi di dominio (evita confusione)
+       idmap config * : backend = tdb
+       idmap config * : range = 3000-7999
+
        vfs objects = fruit streams_xattr
        fruit:aapl = yes
-       fruit:model = MacPro7,1
        fruit:nfs_aces = no
-       
-       # Mappatura utenti
-       username map = /etc/samba/user.map
 
     [Backup]
        path = /mnt/backup
        valid users = timemachine, smbshare
        writable = yes
        force group = timemachine
-       create mask = 0660
-       directory mask = 0770
-       fruit:time machine = yes
-       fruit:time machine max size = 2T
-
-    [Data]
-       path = /mnt/data
-       valid users = smbshare
-       writable = yes
-       create mask = 0600
-       directory mask = 0700
 
     [Multimedia]
        path = /mnt/multimedia
        valid users = smbshare, multimedia
        writable = yes
-       # Permette la collaborazione: i file creati appartengono al gruppo multimedia
        force group = multimedia
-       create mask = 0660
-       directory mask = 0770
+
+    [Data]
+       path = /mnt/data
+       valid users = smbshare
+       writable = yes
