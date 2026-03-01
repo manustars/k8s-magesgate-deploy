@@ -1,5 +1,5 @@
 apiVersion: apps/v1
-kind: DaemonSet # <--- Cambiato da Deployment
+kind: DaemonSet
 metadata:
   name: samba-share
   namespace: share
@@ -27,20 +27,12 @@ spec:
         command: ["/bin/bash", "-c"]
         args:
           - |
-            # Creazione dinamica utenti dai Secret
             for user_file in /etc/samba-secrets/*; do
-              # Salta i file nascosti o di sistema di Kubernetes
               [[ "$user_file" == *".."* ]] && continue
-              
               username=$(basename "$user_file")
               password=$(cat "$user_file")
-              
               echo "Configurazione utente: $username"
-              
-              # -M: no home directory, -s: shell disabilitata
               useradd -M -s /usr/sbin/nologin "$username" || echo "Utente $username già esistente"
-              
-              # Configura la password in Samba in modo non interattivo
               echo -e "$password\n$password" | smbpasswd -a -s "$username"
             done
         volumeMounts:
@@ -50,13 +42,17 @@ spec:
           mountPath: /var/lib/samba/private
 
       containers:
-      # --- SAMBA SERVER ---
       - name: samba
         image: quay.io/samba.org/samba-server:latest
         volumeMounts:
         - name: config
           mountPath: /etc/samba/smb.conf
           subPath: smb.conf
+        # --- MODIFICA 1: Aggiunto mount per user.map ---
+        - name: config
+          mountPath: /etc/samba/user.map
+          subPath: user.map
+        # -----------------------------------------------
         - name: samba-private
           mountPath: /var/lib/samba/private
         - name: multimedia-pvc
@@ -69,7 +65,6 @@ spec:
           mountPath: /mnt/multimedia
           subPath: Video
 
-      # --- AVAHI DISCOVERY (mDNS) ---
       - name: avahi
         image: docker.io/ydkn/avahi:latest
         securityContext:

@@ -4,6 +4,10 @@ metadata:
   name: samba-config
   namespace: share
 data:
+  user.map: |
+    smbshare = "*\smbshare"
+    multimedia = "*\multimedia"
+    timemachine = "*\timemachine"
   smb.conf: |
     [global]
        workgroup = WORKGROUP
