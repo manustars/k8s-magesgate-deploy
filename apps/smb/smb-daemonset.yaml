@@ -27,39 +27,52 @@ spec:
         command: ["/bin/bash", "-c"]
         args:
           - |
-            # 1. Creazione utenti con UID fissi
-            # Creiamo multimedia (1000) e timemachine (1002)
-            useradd -u 1000 -M -s /usr/sbin/nologin multimedia || echo "multimedia già presente"
-            useradd -u 1002 -M -s /usr/sbin/nologin timemachine || echo "timemachine già presente"
+            # 1. Creazione utenti Unix con UID fissi e Gruppi corretti
+            echo "Inizializzazione utenti sistema..."
             
-            # Creiamo smbshare (1001) e lo aggiungiamo ai gruppi degli altri
-            useradd -u 1001 -M -G multimedia,timemachine -s /usr/sbin/nologin smbshare || usermod -aG multimedia,timemachine smbshare
+            # Creazione gruppi primari
+            groupadd -g 1000 multimedia || true
+            groupadd -g 1001 smbshare || true
+            groupadd -g 1002 timemachine || true
+
+            # Creazione/Aggiornamento utenti
+            useradd -u 1000 -g 1000 -M -s /usr/sbin/nologin multimedia || usermod -u 1000 -g 1000 multimedia
+            useradd -u 1002 -g 1002 -M -s /usr/sbin/nologin timemachine || usermod -u 1002 -g 1002 timemachine
+            
+            # smbshare entra nei gruppi degli altri (fondamentale per la tua 'chicca')
+            useradd -u 1001 -g 1001 -M -G multimedia,timemachine -s /usr/sbin/nologin smbshare || usermod -u 1001 -g 1001 -G multimedia,timemachine smbshare
 
             # 2. Configurazione password Samba dai secret
+            echo "Sincronizzazione database Samba..."
             for user_file in /etc/samba-secrets/*; do
+              # Salta i file temporanei di Kubernetes
               [[ "$user_file" == *".."* ]] && continue
+              
               username=$(basename "$user_file")
               password=$(cat "$user_file")
-              echo -e "$password\n$password" | smbpasswd -a -s "$username"
+              
+              echo "Configurazione credenziali per: $username"
+              # Usiamo una subshell per passare la password correttamente
+              (echo "$password"; echo "$password") | smbpasswd -a -s "$username"
               smbpasswd -e "$username"
             done
 
-            # 3. SETTAGGIO PERMESSI FISICI (SGID)
-            echo "Applicazione permessi alle cartelle..."
+            # 3. SETTAGGIO PERMESSI FISICI (SGID e Ownership)
+            echo "Configurazione permessi cartelle mount..."
             
-            # Multimedia: Proprietario multimedia, bit SGID per ereditarietà gruppo
+            # Multimedia: Bit SGID (2) permette a smbshare di scrivere file che multimedia può gestire
             chown -R multimedia:multimedia /mnt/multimedia
             chmod -R 2770 /mnt/multimedia
 
-            # Backup: Proprietario timemachine, bit SGID
+            # Backup: Bit SGID per Time Machine
             chown -R timemachine:timemachine /mnt/backup
             chmod -R 2770 /mnt/backup
 
-            # Data: Solo smbshare
+            # Data: Privata per smbshare
             chown -R smbshare:smbshare /mnt/data
             chmod -R 700 /mnt/data
 
-            echo "Avvio Samba..."
+            echo "Avvio Daemon Samba..."
             exec /usr/sbin/smbd --foreground --no-process-group --debug-stdout
 
         volumeMounts:
