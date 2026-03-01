@@ -21,42 +21,44 @@ spec:
       nodeSelector:
         kubernetes.io/hostname: "kube-bootstrap-cvbiv.hq.marsellihome.com"
 
-      initContainers:
-      - name: user-setup
-        image: quay.io/samba.org/samba-server:latest
-        command: ["/bin/bash", "-c"]
-        args:
-          - |
-            set -e
-            # 1. Inizializza la directory privata di Samba nel volume condiviso
-            # Senza questo, smbpasswd fallisce perché non trova dove scrivere il database
-            mkdir -p /var/lib/samba/private
-            chmod 700 /var/lib/samba/private
-            
-            # 2. Prepariamo il file passwd nel volume condiviso per "ingannare" Samba
-            # Copiamo l'originale e aggiungiamo gli utenti dei Secret
-            cat /etc/passwd > /mnt/shared/passwd-custom
-            
-            # 3. Ciclo di creazione utenti
-            uid=2000
-            for user_file in /etc/samba-secrets/*; do
-              # Salta i file interni di Kubernetes
-              [[ "$user_file" == *".."* ]] && continue
-              
-              username=$(basename "$user_file")
-              password=$(cat "$user_file")
-              
-              echo "Configurazione credenziali per: $username"
-              
-              # Iniezione nel passwd custom (indispensabile per il login)
-              echo "${username}:x:${uid}:${uid}:Samba User:/tmp:/usr/sbin/nologin" >> /mnt/shared/passwd-custom
-              ((uid++))
-              
-              # Aggiunta al database Samba (passdb.tdb)
-              # Ora che /var/lib/samba/private esiste, questo comando avrà successo
-              echo -e "$password\n$password" | smbpasswd -a -s "$username"
-            done
-            echo "Setup utenti completato con successo."
+        initContainers:
+              - name: user-setup
+                image: quay.io/samba.org/samba-server:latest
+                command: ["/bin/bash", "-c"]
+                args:
+                  - |
+                    set -e
+                    # 1. Prepariamo le directory
+                    mkdir -p /var/lib/samba/private
+                    chmod 700 /var/lib/samba/private
+                    
+                    # 2. Prepariamo il file passwd per il container finale
+                    cat /etc/passwd > /mnt/shared/passwd-custom
+                    
+                    # 3. Ciclo creazione
+                    uid=2000
+                    for user_file in /etc/samba-secrets/*; do
+                      [[ "$user_file" == *".."* ]] && continue
+                      
+                      username=$(basename "$user_file")
+                      password=$(cat "$user_file")
+                      
+                      echo "Processando utente: $username"
+                      
+                      # --- IL TRUCCO ---
+                      # Creiamo l'utente REALE nell'InitContainer (temporaneo) 
+                      # altrimenti smbpasswd/pdbedit falliscono l'aggiunta.
+                      useradd -M -s /usr/sbin/nologin -u $uid "$username" || true
+                      
+                      # Lo aggiungiamo al file per il container Samba finale
+                      echo "${username}:x:${uid}:${uid}:Samba User:/tmp:/usr/sbin/nologin" >> /mnt/shared/passwd-custom
+                      
+                      # Lo aggiungiamo al database Samba
+                      (echo "$password"; echo "$password") | smbpasswd -a -s "$username"
+                      
+                      ((uid++))
+                    done
+                    echo "Setup completato correttamente."
         volumeMounts:
         - name: samba-secrets
           mountPath: /etc/samba-secrets
