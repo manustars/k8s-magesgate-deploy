@@ -81,9 +81,9 @@ spec:
         - name: config
           mountPath: /etc/samba/smb.conf
           subPath: smb.conf
-        - name: config
-          mountPath: /etc/samba/user.map
-          subPath: user.map
+        # - name: config
+        #   mountPath: /etc/samba/user.map
+        #   subPath: user.map
         - name: samba-private
           mountPath: /var/lib/samba/private
         - name: multimedia-pvc

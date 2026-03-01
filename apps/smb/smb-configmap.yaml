@@ -4,25 +4,28 @@ metadata:
   name: samba-config
   namespace: share
 data:
-  user.map: |
-    # Formato: Utente_Locale = Alias_Remoto
-    smbshare = *\smbshare smbshare
-    multimedia = *\multimedia multimedia
-    timemachine = *\timemachine timemachine
-
   smb.conf: |
     [global]
        workgroup = WORKGROUP
        security = user
        log level = 3
-       username map = /etc/samba/user.map
        
-       # DISATTIVA il mapping dei nomi ai gruppi di dominio (evita confusione)
-       idmap config * : backend = tdb
-       idmap config * : range = 3000-7999
+       # --- IGNORA DOMINIO E FORZA LOGIN LOCALE ---
+       # Forza l'autenticazione solo sul database SAM locale (ignora domini esterni)
+       auth methods = sam
+       # Se il client manda DOMINIO\utente, Samba prova a cercare solo 'utente'
+       winbind offline logon = yes
+       # Impedisce a Samba di aggiungere il prefisso del dominio agli utenti
+       winbind nested groups = no
+       
+       # Interfacce
+       interfaces = lo ovs-share
+       bind interfaces only = yes
 
+       # macOS / Time Machine
        vfs objects = fruit streams_xattr
        fruit:aapl = yes
+       fruit:model = MacPro7,1
        fruit:nfs_aces = no
 
     [Backup]
@@ -30,14 +33,22 @@ data:
        valid users = timemachine, smbshare
        writable = yes
        force group = timemachine
+       create mask = 0660
+       directory mask = 0770
+       fruit:time machine = yes
+       fruit:time machine max size = 2T
+
+    [Data]
+       path = /mnt/data
+       valid users = smbshare
+       writable = yes
+       create mask = 0600
+       directory mask = 0700
 
     [Multimedia]
        path = /mnt/multimedia
        valid users = smbshare, multimedia
        writable = yes
        force group = multimedia
-
-    [Data]
-       path = /mnt/data
-       valid users = smbshare
-       writable = yes
+       create mask = 0660
+       directory mask = 0770
