@@ -1,5 +1,5 @@
 apiVersion: apps/v1
-kind: DaemonSet # <--- Cambiato da Deployment
+kind: DaemonSet
 metadata:
   name: samba-share
   namespace: share
@@ -27,9 +27,12 @@ spec:
         command: ["/bin/bash", "-c"]
         args:
           - |
-            # Creazione dinamica utenti dai Secret
+            # 1. Prepariamo il file passwd nel volume condiviso
+            cp /etc/passwd /tmp/etc/passwd
+            
+            # 2. Creazione dinamica utenti dai Secret
+            uid=2000
             for user_file in /etc/samba-secrets/*; do
-              # Salta i file nascosti o di sistema di Kubernetes
               [[ "$user_file" == *".."* ]] && continue
               
               username=$(basename "$user_file")
@@ -37,10 +40,12 @@ spec:
               
               echo "Configurazione utente: $username"
               
-              # -M: no home directory, -s: shell disabilitata
-              useradd -M -s /usr/sbin/nologin "$username" || echo "Utente $username già esistente"
+              # Aggiungiamo l'utente al file passwd nel volume condiviso
+              # Questo "inganna" Samba facendogli credere che l'utente esista nel sistema
+              echo "${username}:x:${uid}:${uid}:Samba User:/tmp:/usr/sbin/nologin" >> /tmp/etc/passwd
+              ((uid++))
               
-              # Configura la password in Samba in modo non interattivo
+              # Configura la password nel database Samba (che è nel volume samba-private)
               echo -e "$password\n$password" | smbpasswd -a -s "$username"
             done
         volumeMounts:
@@ -48,6 +53,8 @@ spec:
           mountPath: /etc/samba-secrets
         - name: samba-private
           mountPath: /var/lib/samba/private
+        - name: passwd-volume
+          mountPath: /tmp/etc
 
       containers:
       # --- SAMBA SERVER ---
