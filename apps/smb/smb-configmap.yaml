@@ -18,7 +18,7 @@ data:
        security = user
        
        # Risolve "failed to setup guest info" forzando un utente Unix esistente
-       guest account = nobody
+       guest account = root
        map to guest = bad user
        
        # Applica il mapping per eliminare il prefisso [MicrosoftAccount]
