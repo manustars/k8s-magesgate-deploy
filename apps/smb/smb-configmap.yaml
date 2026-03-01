@@ -4,11 +4,11 @@ metadata:
   name: samba-config
   namespace: share
 data:
-  # Nuovo file di mapping
+  # La sintassi corretta richiede la virgola per mappare pattern con spazi
   user.map: |
-    smbshare = * \smbshare
-    multimedia = * \multimedia
-    timemachine = * \timemachine
+    smbshare = "*\smbshare"
+    multimedia = "*\multimedia"
+    timemachine = "*\timemachine"
 
   smb.conf: |
     [global]
@@ -17,23 +17,31 @@ data:
        bind interfaces only = yes
        security = user
        
-       # Documentazione Samba: Mappa gli utenti remoti su quelli locali
+       # Risolve l'errore "failed to setup guest info"
+       # Forza l'utente guest su un account che esiste certamente nel container
+       guest account = nobody
+       map to guest = bad user
+       
+       # Mapping utenti per ripulire i domini Windows (MicrosoftAccount, ecc.)
        username map = /etc/samba/user.map
        
-       # Importante: disabilita i tentativi di Kerberos/Domain che Windows prova ad usare
+       # Disabilita funzioni di dominio non necessarie che causano rumore nei log
        domain master = no
-       local master = yes
+       local master = no
        preferred master = no
+       os level = 0
 
        logging = stdout
        log level = 2
        
        passdb backend = tdbsam
        
-       # Permessi e macOS (le tue configurazioni)
+       # Estensioni macOS
        vfs objects = fruit streams_xattr
        fruit:aapl = yes
        fruit:model = MacPro7,1
+       
+       # Forzatura privilegi per filesystem CoreOS/PVC
        force user = root
        force group = root
 
@@ -41,11 +49,16 @@ data:
        path = /mnt/backup
        valid users = timemachine, smbshare
        writable = yes
+       browsable = yes
+
     [Data]
        path = /mnt/data
        valid users = smbshare
        writable = yes
+       browsable = yes
+
     [Multimedia]
        path = /mnt/multimedia
        valid users = smbshare, multimedia
        writable = yes
+       browsable = yes
