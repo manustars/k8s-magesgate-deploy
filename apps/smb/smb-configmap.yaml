@@ -10,8 +10,17 @@ data:
        interfaces = lo ovs-share
        bind interfaces only = yes
        security = user
+       
+       # --- FIX PER WINDOWS MICROSOFT ACCOUNT ---
+       # Ignora il dominio inviato da Windows
+       map untrusted to domain = yes
+       # Forza la ricerca locale
+       auth methods = sam
+       # ------------------------------------------
+
        logging = stdout
        log level = 2
+       
        map to guest = never
        restrict anonymous = 2
        passdb backend = tdbsam
@@ -20,17 +29,24 @@ data:
        # Estensioni macOS Globali
        vfs objects = fruit streams_xattr
        fruit:aapl = yes
+       fruit:metadata = netatalk
        fruit:model = MacPro7,1
        fruit:nfs_aces = no
        
-       # Permessi forzati per evitare conflitti UID su CoreOS
+       # Permessi forzati (CoreOS/PVC)
        force user = root
        force group = root
+
+       # Tuning performance
+       socket options = TCP_NODELAY IPTOS_LOWDELAY
+       read raw = yes
+       write raw = yes
 
     [Backup]
        path = /mnt/backup
        valid users = timemachine, smbshare
        writable = yes
+       browsable = yes
        fruit:time machine = yes
        fruit:time machine max size = 2T
 
@@ -38,8 +54,10 @@ data:
        path = /mnt/data
        valid users = smbshare
        writable = yes
+       browsable = yes
 
     [Multimedia]
        path = /mnt/multimedia
        valid users = smbshare, multimedia
        writable = yes
+       browsable = yes
