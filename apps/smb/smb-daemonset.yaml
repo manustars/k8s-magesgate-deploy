@@ -97,7 +97,7 @@ spec:
           subPath: Video
 
       - name: avahi
-        image: docker.io/ydkn/avahi:latest
+        image: docker.io/ensody/avahi:latest
         securityContext:
           privileged: true
         volumeMounts:
