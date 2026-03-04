@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: filebrowser
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: filebrowser
+  template:
+    metadata:
+      labels:
+        app: filebrowser
+    spec:
+      securityContext:
+        fsGroup: 1001 # Importante per i permessi di scrittura sui volumi
+      containers:
+      - name: filebrowser
+        image: github.io/gtstef/filebrowser:stable
+        env:
+        - name: FILEBROWSER_ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: filebrowser-admin-secret
+              key: password
+        volumeMounts:
+        - name: config
+          mountPath: /home/filebrowser/data/config.yaml
+          subPath: config.yaml
+        - name: internal-data
+          mountPath: /home/filebrowser/db
+          subPath: db
+        - name: internal-data
+          mountPath: /home/filebrowser/cache
+          subPath: cache
+        - name: multimedia-storage
+          mountPath: /share
+      volumes:
+      - name: config
+        configMap:
+          name: filebrowser-config
+      - name: internal-data
+        persistentVolumeClaim:
+          claimName: pvc-filebrowser-internal
+      - name: multimedia-storage
+        persistentVolumeClaim:
+          claimName: pvc-local-multimedia-share
