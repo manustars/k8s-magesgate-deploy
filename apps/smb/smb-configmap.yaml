@@ -9,7 +9,7 @@ data:
        workgroup = WORKGROUP
        security = user
        log level = 3
-       
+       server min protocol = SMB2
        # --- IGNORA DOMINIO E FORZA LOGIN LOCALE ---
        # Forza l'autenticazione solo sul database SAM locale (ignora domini esterni)
        auth methods = sam
@@ -23,7 +23,8 @@ data:
        bind interfaces only = yes
 
        # macOS / Time Machine
-       vfs objects = fruit streams_xattr
+       vfs objects = catia fruit streams_xattr
+       ea support = yes
        fruit:aapl = yes
        fruit:model = MacPro7,1
        fruit:nfs_aces = no

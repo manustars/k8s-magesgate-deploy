@@ -108,8 +108,10 @@ spec:
             port=445
             [Time-Machine-Backup]
             type=_adisk._tcp
-            port=0
-            txt=sys=waMa=0,adVF=0x100 dk0=adVN=Backup,adVF=0x82
+            # port=0
+            # txt=sys=waMa=0,adVF=0x100 dk0=adVN=Backup,adVF=0x82
+            port=9
+            txt=dk0=adVN=Backup,adVF=0x82
         volumeMounts:
         - name: avahi-conf
           mountPath: /etc/avahi/avahi-daemon.conf
