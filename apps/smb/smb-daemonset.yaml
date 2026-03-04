@@ -100,22 +100,15 @@ spec:
         image: docker.io/ydkn/avahi:latest
         securityContext:
           privileged: true
-        env:
-        - name: AVAHI_SERVICES
-          value: |
-            [NAS-Server]
-            type=_smb._tcp
-            port=445
-            [Time-Machine-Backup]
-            type=_adisk._tcp
-            # port=0
-            # txt=sys=waMa=0,adVF=0x100 dk0=adVN=Backup,adVF=0x82
-            port=9
-            txt=dk0=adVN=Backup,adVF=0x82
         volumeMounts:
-        - name: avahi-conf
-          mountPath: /etc/avahi/avahi-daemon.conf
-          subPath: avahi-daemon.conf
+          # monta il daemon.conf
+          - name: avahi-conf
+            mountPath: /etc/avahi/avahi-daemon.conf
+            subPath: avahi-daemon.conf
+          # monta il servizio Time Machine
+          - name: avahi-conf
+            mountPath: /etc/avahi/services/timemachine.service
+            subPath: timemachine.service
 
       volumes:
       - name: config
@@ -127,6 +120,8 @@ spec:
           items:
             - key: avahi-daemon.conf
               path: avahi-daemon.conf
+            - key: timemachine.service
+              path: timemachine.service
       - name: samba-secrets
         secret:
           secretName: samba-users
