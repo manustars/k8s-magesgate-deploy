@@ -107,7 +107,7 @@ spec:
             subPath: avahi-daemon.conf
           # monta il servizio Time Machine
           - name: avahi-conf
-            mountPath: /services/timemachine.service
+            mountPath: /etc/avahi/services/timemachine.service
             subPath: timemachine.service
 
       volumes:
