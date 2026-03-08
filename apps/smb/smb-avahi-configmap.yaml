@@ -6,25 +6,33 @@ metadata:
 data:
   avahi-daemon.conf: |
     [server]
-    # Nome che apparirà sul Finder (puoi cambiarlo a piacimento)
+    # Nome che apparirà sul Finder
     host-name=share
     domain-name=hq.marsellihome.com
-    # Fondamentale: forza Avahi a usare solo il bridge della seconda rete
+
+    # Limita Avahi all'interfaccia della rete share
     allow-interfaces=ovs-share
+
     use-ipv4=yes
     use-ipv6=no
     enable-dbus=no
-    ratelimit-interval-usec=1000000
-    ratelimit-burst=1000
+
+    # rate limit non necessario in reti piccole
+    #ratelimit-interval-usec=1000000
+    #ratelimit-burst=1000
 
     [wide-area]
-    enable-wide-area=yes
+    # non serve se usi solo mDNS locale
+    #enable-wide-area=yes
 
     [publish]
     publish-hinfo=no
-    publish-workstation=no
+
+    # non necessario per TimeMachine
+    #publish-workstation=no
 
     [reflector]
+    # serve solo se fai bridging tra VLAN
     enable-reflector=no
 
     [rlimits]
@@ -47,8 +55,15 @@ data:
         <txt-record>dk0=adVN=Backup,adVF=0x82</txt-record>
       </service>
 
+      <!--
+      NON serve per Time Machine e causa l'errore
+      "Failed to add service '_smb._tcp': Not supported"
+      nelle build container di Avahi
+      -->
+      <!--
       <service>
         <type>_smb._tcp</type>
         <port>445</port>
       </service>
+      -->
     </service-group>
