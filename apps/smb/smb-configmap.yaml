@@ -12,7 +12,7 @@ data:
        server min protocol = SMB2
        # --- IGNORA DOMINIO E FORZA LOGIN LOCALE ---
        # Forza l'autenticazione solo sul database SAM locale (ignora domini esterni)
-       auth methods = sam
+       #auth methods = sam
        # Se il client manda DOMINIO\utente, Samba prova a cercare solo 'utente'
        winbind offline logon = yes
        # Impedisce a Samba di aggiungere il prefisso del dominio agli utenti
@@ -33,6 +33,7 @@ data:
        path = /mnt/backup
        valid users = timemachine, smbshare
        writable = yes
+       browseable = yes
        force group = timemachine
        create mask = 0660
        directory mask = 0770
@@ -43,6 +44,7 @@ data:
        path = /mnt/data
        valid users = smbshare
        writable = yes
+       browseable = yes
        create mask = 0600
        directory mask = 0700
 
@@ -50,6 +52,7 @@ data:
        path = /mnt/multimedia
        valid users = smbshare, multimedia
        writable = yes
+       browseable = yes
        force group = multimedia
        create mask = 0660
        directory mask = 0770
