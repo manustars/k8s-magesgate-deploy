@@ -29,7 +29,9 @@ spec:
         - name: SERVER_NAME
           value: TrashCraft
         - name: MOTD
-          value: The trash is yours 
+          value: The trash is yours
+        - name: MODRINTH_PROJECTS
+          value: "viaversion"
         ports:
         - containerPort: 25565
           hostPort: 25565
