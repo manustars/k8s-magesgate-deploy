@@ -1,0 +1,13 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: flaresolverr
+  namespace: media-hub
+spec:
+  ports:
+    - protocol: TCP
+      port: 8191
+      targetPort: 8191
+  selector:
+    app: flaresolverr
+  type: ClusterIP

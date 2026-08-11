@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: flaresolverr
+  namespace: argocd
+spec:
+  destination:
+    namespace: media-hub
+    server: https://kubernetes.default.svc
+  project: default
+  source:
+    path: apps/flaresolverr
+    repoURL: https://github.com/manustars/k8s-magesgate-deploy.git
+    targetRevision: HEAD
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
