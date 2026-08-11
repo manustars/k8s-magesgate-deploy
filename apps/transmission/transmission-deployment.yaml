@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: transmissionvpn
+  namespace: media-hub
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: transmissionvpn
+  template:
+    metadata:
+      labels:
+        app: transmissionvpn
+        vpn-client: tovpn
+    spec:
+      volumes:
+        - name: transmission-config
+          persistentVolumeClaim:
+            claimName: pvc-transmission-config
+        - name: downloads-incompleti
+          persistentVolumeClaim:
+            claimName: pvc-local-downloads-incompleti
+        - name: downloads-completi
+          persistentVolumeClaim:
+            claimName: pvc-local-downloads-completi
+      containers:
+        - name: transmission
+          image: lscr.io/linuxserver/transmission:latest
+          ports:
+            - containerPort: 9091
+              protocol: TCP
+            - containerPort: 51413
+              protocol: TCP
+          resources: {}
+          volumeMounts:
+            - name: transmission-config
+              mountPath: /config
+            - name: downloads-incompleti
+              mountPath: /downloads/incomplete
+            - name: downloads-completi
+              mountPath: /downloads/complete
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          imagePullPolicy: Always
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      dnsPolicy: ClusterFirst
+      nodeSelector:
+        egress-gateway: 'true'
+      securityContext: {}
+      schedulerName: default-scheduler
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 25%
+      maxSurge: 25%
+  revisionHistoryLimit: 10
+  progressDeadlineSeconds: 600

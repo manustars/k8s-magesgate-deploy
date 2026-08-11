@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: transmission
+  namespace: argocd
+spec:
+  destination:
+    namespace: media-hub
+    server: https://kubernetes.default.svc
+  project: default
+  source:
+    path: apps/transmission
+    repoURL: https://github.com/manustars/k8s-magesgate-deploy.git
+    targetRevision: HEAD
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
