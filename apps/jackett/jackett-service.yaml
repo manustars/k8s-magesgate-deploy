@@ -1,0 +1,13 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: jackett
+  namespace: media-hub
+spec:
+  ports:
+    - protocol: TCP
+      port: 9117
+      targetPort: 9117
+  selector:
+    app: jackett
+  type: ClusterIP
