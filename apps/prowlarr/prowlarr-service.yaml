@@ -1,0 +1,13 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: prowlarr
+  namespace: media-hub
+spec:
+  ports:
+    - protocol: TCP
+      port: 9696
+      targetPort: 9696
+  selector:
+    app: prowlarr
+  type: ClusterIP
